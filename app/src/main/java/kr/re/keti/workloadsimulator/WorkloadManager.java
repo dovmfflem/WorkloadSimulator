@@ -337,6 +337,12 @@ public class WorkloadManager {
 		}
 	});
 
+	private Thread Rnn_test = new Thread(new Runnable() {
+		@Override
+		public void run() {
+
+		}
+	});
 
 	
 	private Thread workload_down = new Thread(new Runnable() {
@@ -449,6 +455,7 @@ public class WorkloadManager {
 	});
 
 	private void addWorkload(int work, String msg){
+
 		if(!heartcheck){
             if(Workload + work >= 100) {
                 Workload = 100;
