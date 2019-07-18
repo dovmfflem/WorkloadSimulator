@@ -30,7 +30,7 @@ public class VehicleManager {
     private String ServerIP;
     ////
 
-    private boolean isdebug = true;
+    private boolean isdebug = false;
     private Context mContext;
 
     private WorkloadManager wm;
@@ -56,12 +56,14 @@ public class VehicleManager {
 
     private boolean first_start;
     private InputStream mInputStream;
-
+    //public File fVehicleData;
 
     public VehicleManager(Context context) {
-        wm = new WorkloadManager();
-        am = new AlertnessManager();
+//        fVehicleData = new File(mContext.getFilesDir(), "VehicleData.txt");//경로에 데이터를 저장. 학습용 데이터 저장
+        wm = new WorkloadManager(context);
+        am = new AlertnessManager(context);
         mContext = context;
+
 
 //        try {
 //            cdl = new CompDataLogger();
@@ -140,9 +142,19 @@ public class VehicleManager {
         isLogger = false;
     }
 
+
+    public void saveVehicleData(Bundle bundle){
+
+        //am용 wm용 두개를 저장.
+
+        //동시에 테스트용 데이터 50개정도 저장.
+    }
+
     public void setVehicleData(Bundle bundle) {
         wm.setVehicleData(bundle);
         am.setVehicleData(bundle);
+
+
 
         rpm = bundle.getShort("rpm");
         speed = bundle.getShort("speed");

@@ -1,7 +1,25 @@
 package kr.re.keti.workloadsimulator;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+import libsvm.svm;
+import libsvm.svm_model;
+import libsvm.svm_node;
+
 
 public class WorkloadManager {
 
@@ -58,8 +76,21 @@ public class WorkloadManager {
 	private boolean heartcheck;
 	double heart_avg;
 	private int heartrate_check_time = 1000;
-	
-	public WorkloadManager(){
+
+	private Context mContext;
+	private File fWorkloadData;
+	private final String filename = "WorkloadData.txt";
+	private FileWriter fw;
+
+	private LinkedList<Double> ll;
+	private Thread th_trainData;
+
+	private int cnt_cl1, cnt_cl2, cnt_cl3;
+	private int cnt_limit = 100;
+	private boolean trainning_flag = false;
+	private boolean predict_flag = true;
+
+	public WorkloadManager(Context context){
 		gstart = false;
 		
 		steering = 0;
@@ -89,6 +120,61 @@ public class WorkloadManager {
 		heart_cnt = 0;
 		heartcheck = false;
 		heart_avg = 0;
+
+		mContext = context;
+		ll = new LinkedList<>();
+		fWorkloadData = mContext.getFilesDir();
+
+		cnt_cl1 = 0;
+		cnt_cl2 = 0;
+		cnt_cl3 = 0;
+
+		init_svm_predict();
+
+		//학습되어있는지 확인이 필요함.
+		//일단 파일을 만든다.
+
+
+	}
+
+	private svm_model model;
+	private int svm_type;
+	private int nr_class;
+
+	private int[] labels;
+	double[] prob_estimates;
+
+	public void init_svm_predict(){
+
+		try {
+			model = svm.svm_load_model(fWorkloadData.toString() + "/result.model");
+			svm_type = svm.svm_get_svm_type(model);
+			nr_class = svm.svm_get_nr_class(model);
+
+			labels=new int[nr_class];
+			svm.svm_get_labels(model,labels);
+			prob_estimates = new double[nr_class];
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public int predict_driver(){
+		svm_node[] x = new svm_node[30];
+		for(int j=0;j<30;j++)
+		{
+			x[j] = new svm_node();
+			x[j].index = j+1;
+			x[j].value = ll.indexOf(j);
+		}
+
+
+		double v;
+		v = svm.svm_predict_probability(model,x,prob_estimates);
+
+		return (int)v;
 	}
 	
 	public void start(){
@@ -141,16 +227,36 @@ public class WorkloadManager {
 	}
 
 
+	public void setqueue(){
+
+
+//		ll.add(speed / 25.0);
+//		ll.addLast(steering / 450.0);
+		ll.add((double)speed);
+//		ll.addLast((double)steering);
+//		ll.addLast((double)DriverStatus);
+
+		if(ll.size() > 30){
+			ll.removeFirst();
+//			ll.removeFirst();
+//			ll.removeFirst();
+
+
+		}
+	}
 
     public void setVehicleData(Bundle bundle) {
-        steering = bundle.getShort("steering");
-        speed = bundle.getShort("speed");
+		speed = bundle.getShort("speed");
+		steering = bundle.getShort("steering");
+		setqueue();
+
     }
 
     public void setDriverData(Bundle bundle) {
 //        eye = bundle.getBoolean("eye");
 //        sleep = bundle.getBoolean("sleep");
 		DriverStatus = bundle.getInt("driverstatus");
+		setqueue();
     }
 
 	public void setHeartData(Bundle bundle){
@@ -454,7 +560,80 @@ public class WorkloadManager {
 		}
 	});
 
+	private Thread Thrd_svm_training = new Thread(new Runnable() {
+		@Override
+		public void run() {
+
+			svm_train t = new svm_train();
+			String[] argv = {fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + "/result.model"};
+			try {
+				t.run(argv);
+				Log.d("khlee", "SVM Trainning finish");
+				predict_flag = true;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+		}
+	});
+
 	private void addWorkload(int work, String msg){
+
+//		fWorkloadData = new File(mContext.getFilesDir(),filename);
+//		try {
+//			fw = new FileWriter(fWorkloadData, true);
+//			if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
+//				fw.write("0 ");
+//			}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
+//
+//			}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
+//
+//			}else{
+//
+//			}
+//			fw.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
+		if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
+			cnt_cl1++;
+			if(cnt_cl1 <= cnt_limit){
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 1));
+				th_trainData.start();
+				Log.d("khlee", "traindata_1");
+			}else{
+			}
+		}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
+			cnt_cl2++;
+			if(cnt_cl2 <= cnt_limit){
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 2));
+				th_trainData.start();
+				Log.d("khlee", "traindata_2");
+			}else{
+			}
+		}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
+			cnt_cl3++;
+			if(cnt_cl3 <= cnt_limit){
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 3));
+				th_trainData.start();
+				Log.d("khlee", "traindata_3");
+			}else{
+			}
+		}else{
+			Log.d("khlee", "Unknown addWorkload case");
+		}
+
+		if(cnt_cl1 + cnt_cl2 + cnt_cl3 >= cnt_limit*3 && trainning_flag){
+
+			Thrd_svm_training.start();
+			Log.d("khlee", "SVM Trainning start");
+			trainning_flag = false;
+		}
+
+		int svm_result;
+		svm_result = predict_driver();
+		Log.d("khlee", "predict result" + svm_result);
 
 		if(!heartcheck){
             if(Workload + work >= 100) {
@@ -493,4 +672,51 @@ public class WorkloadManager {
 	private static final int STATE_HEART_NORMAL = 0;
 	private static final int STATE_HEART_HIGH = 1;
 	private static final int STATE_HEART_LOW = 2;
+}
+
+class rtrainData implements Runnable{
+	public LinkedList mll;
+	public File mfWorkloadData;
+	public int mclasses;
+	private final String filename = "WorkloadData.txt";
+
+	public rtrainData(LinkedList ll, File fWorkloadData, int classes) {
+		mll = ll;
+		mfWorkloadData = fWorkloadData;
+		mclasses = classes;
+	}
+	@Override
+	public void run() {
+		int index = 1;
+		StringBuilder sb = new StringBuilder();
+
+		if(mll.size() < 30){
+			Log.d("khlee", "trainData length is not 30");
+		}else{
+			Log.d("khlee", "trainData length is over 30");
+			sb.append(mclasses);
+			sb.append(" ");
+			for(int i = 0; i < mll.size(); i++){
+				//sb.append(i+1);
+				sb.append(":");
+				sb.append(mll.get(i));
+				sb.append(" ");
+			}
+			sb.append("\n");
+
+			try {
+				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
+				Log.d("khlee", "trainData write");
+
+				fw.write(sb.toString());
+				fw.close();
+			} catch (IOException e) {
+				Log.d("khlee", "trainData file open fail");
+				e.printStackTrace();
+
+
+			}
+		}
+
+	}
 }

@@ -31,6 +31,7 @@ import java.net.Socket;
 import kr.re.keti.DriverDataContainer;
 import kr.re.keti.VehicleDataContainer;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private final int SEEKBAR_MAX = 9000;
@@ -49,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvWorkload;
     private TextView tvAlertness;
-
     private SeekBar seekbar;
 
     private Button btnSpeedUp;
@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
     ////socket
 
     private Bundle bundle;
-    private int plus = 1;
+    private int plus = 2;
 
     private short speed = 0;
     private short rpm = 0;

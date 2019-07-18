@@ -1,7 +1,10 @@
 package kr.re.keti.workloadsimulator;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+
+import java.io.File;
 
 import kr.re.keti.VehicleDataContainer.TurnSignal;
 
@@ -59,9 +62,10 @@ public class AlertnessManager {
 	private boolean heartcheck;
 	double heart_avg;
 	private int heartrate_check_time = 1000;
-	
-	
-	public AlertnessManager(){
+
+	private Context mContext;
+
+	public AlertnessManager(Context context){
 		dsm_weight = 1;
 		flag_steering = false;
 		flag_dsm = false;
@@ -82,6 +86,8 @@ public class AlertnessManager {
 		heart_cnt = 0;
 		heartcheck = false;
 		heart_avg = 0;
+
+		mContext = context;
 
 	}
 
