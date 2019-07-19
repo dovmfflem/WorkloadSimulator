@@ -30,7 +30,7 @@ public class VehicleManager {
     private String ServerIP;
     ////
 
-    private boolean isdebug = false;
+    private boolean isdebug = true;
     private Context mContext;
 
     private WorkloadManager wm;
