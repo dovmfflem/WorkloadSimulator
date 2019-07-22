@@ -174,276 +174,283 @@
 
         </LinearLayout>
 
-        <LinearLayout
+
+
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent">
 
-
-            <TextView
-                android:id="@+id/tvVehicleButton"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="Vehicle Data"
-                android:textSize="30dp" />
+                android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/btnSpeedUp"
-                    android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/tvVehicleButton"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onSpeedUp"
-                    android:text="Speed +"
-                    android:textSize="20dp" />
+                    android:gravity="center"
+                    android:text="Vehicle Data"
+                    android:textSize="30dp" />
 
-                <Button
-                    android:id="@+id/btnSpeedDown"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnSpeedUp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onSpeedUp"
+                        android:text="Speed +"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnSpeedDown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onSpeedDown"
+                        android:text="Speed -"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnRpmUp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onRpmUp"
+                        android:text="Rpm +"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnRpmDown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onRpmDown"
+                        android:text="Rpm -"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnHeartUp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onHeartUp"
+                        android:text="Heart Rate +"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnHeartDown"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onHeartDown"
+                        android:text="Heart rate -"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnTurnNone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onTurnNone"
+                        android:text="None"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnTurnLeft"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onTurnLeft"
+                        android:text="Left"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnTurnRight"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onTurnRight"
+                        android:text="right"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnTurnBoth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onTurnBoth"
+                        android:text="Both"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnBreak"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onBreak"
+                        android:text="Break"
+                        android:textSize="20dp" />
+
+                </LinearLayout>
+
+
+                <TextView
+                    android:id="@+id/tvDsmdata"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onSpeedDown"
-                    android:text="Speed -"
-                    android:textSize="20dp" />
+                    android:gravity="center"
+                    android:text="DSM Data"
+                    android:textSize="30dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnDsmDisable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onDsmDisable"
+                        android:text="Clear"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnDsmEyeF"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onDsmEyeF"
+                        android:text="Eye Forward"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnDsmFace"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onDsmFace"
+                        android:text="Lost face"
+                        android:textSize="20dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnDsm1stsleep"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onDsm1stSleep"
+                        android:text="1st sleep"
+                        android:textSize="20dp" />
+
+                    <Button
+                        android:id="@+id/btnDsm2ndsleep"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:layout_weight="1"
+                        android:onClick="onDsm2ndSleep"
+                        android:text="2nd sleep"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <CheckBox
+                        android:id="@+id/cb10"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="false"
+                        android:onClick="onPlus10"
+                        android:text="+10" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="5dp"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/editText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ems="10"
+                        android:inputType="textPersonName"
+                        android:text="127.0.0.1" />
+
+                    <Button
+                        android:id="@+id/btnConnect"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="onConnect"
+                        android:text="Connect"
+                        android:textSize="20dp" />
+                </LinearLayout>
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnRpmUp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onRpmUp"
-                    android:text="Rpm +"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnRpmDown"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onRpmDown"
-                    android:text="Rpm -"
-                    android:textSize="20dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnHeartUp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onHeartUp"
-                    android:text="Heart Rate +"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnHeartDown"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onHeartDown"
-                    android:text="Heart rate -"
-                    android:textSize="20dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnTurnNone"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onTurnNone"
-                    android:text="None"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnTurnLeft"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onTurnLeft"
-                    android:text="Left"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnTurnRight"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onTurnRight"
-                    android:text="right"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnTurnBoth"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onTurnBoth"
-                    android:text="Both"
-                    android:textSize="20dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnBreak"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onBreak"
-                    android:text="Break"
-                    android:textSize="20dp" />
-
-            </LinearLayout>
-
-
-            <TextView
-                android:id="@+id/tvDsmdata"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="DSM Data"
-                android:textSize="30dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnDsmDisable"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onDsmDisable"
-                    android:text="Clear"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnDsmEyeF"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onDsmEyeF"
-                    android:text="Eye Forward"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnDsmFace"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onDsmFace"
-                    android:text="Lost face"
-                    android:textSize="20dp" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnDsm1stsleep"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onDsm1stSleep"
-                    android:text="1st sleep"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/btnDsm2ndsleep"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:onClick="onDsm2ndSleep"
-                    android:text="2nd sleep"
-                    android:textSize="20dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal">
-
-                <CheckBox
-                    android:id="@+id/cb10"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:checked="false"
-                    android:text="+10"
-                    android:onClick="onPlus10"/>
-
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="5dp"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:orientation="horizontal">
-
-                <EditText
-                    android:id="@+id/editText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ems="10"
-                    android:inputType="textPersonName"
-                    android:text="127.0.0.1" />
-
-                <Button
-                    android:id="@+id/btnConnect"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:onClick="onConnect"
-                    android:text="Connect"
-                    android:textSize="20dp" />
-            </LinearLayout>
-        </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 </LinearLayout>

@@ -704,21 +704,36 @@ public class MainActivity extends AppCompatActivity {
 
     public void onSpeedUp(View view) {
         speed += plus;
+        if(speed >= 250){
+            speed = 250;
+            Toast.makeText(getApplicationContext(),"Speed Limit 250km",Toast.LENGTH_SHORT).show();
+        }
         tvSpeed.setText("Speed : " + speed);
+
     }
 
     public void onSpeedDown(View view) {
         speed -= plus;
+        if(speed <= 0){
+            speed = 0;
+        }
         tvSpeed.setText("Speed : " + speed);
     }
 
     public void onRpmUp(View view) {
         rpm += (plus*100);
+        if(rpm >= 8000){
+            rpm = 8000;
+            Toast.makeText(getApplicationContext(),"Rpm Limit 8000rpm",Toast.LENGTH_SHORT).show();
+        }
         tvRpm.setText("Rpm : " + rpm);
     }
 
     public void onRpmDown(View view) {
         rpm -= (plus*100);
+        if(rpm <= 0){
+            rpm = 0;
+        }
         tvRpm.setText("Rpm : " + rpm);
     }
 

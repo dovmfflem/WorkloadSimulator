@@ -89,6 +89,7 @@ public class WorkloadManager {
 	private int cnt_limit = 100;
 	private boolean trainning_flag = false;
 	private boolean predict_flag = true;
+	private int num_train_dim = 50;
 
 	public WorkloadManager(Context context){
 		gstart = false;
@@ -161,9 +162,11 @@ public class WorkloadManager {
 
 	}
 
+
+
 	public int predict_driver(){
-		svm_node[] x = new svm_node[30];
-		for(int j=0;j<30;j++)
+		svm_node[] x = new svm_node[num_train_dim];
+		for(int j=0;j<num_train_dim;j++)
 		{
 			x[j] = new svm_node();
 			x[j].index = j+1;
@@ -236,7 +239,7 @@ public class WorkloadManager {
 //		ll.addLast((double)steering);
 //		ll.addLast((double)DriverStatus);
 
-		if(ll.size() > 30){
+		if(ll.size() > num_train_dim){
 			ll.removeFirst();
 //			ll.removeFirst();
 //			ll.removeFirst();
@@ -599,7 +602,7 @@ public class WorkloadManager {
 		if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
 			cnt_cl1++;
 			if(cnt_cl1 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 1));
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 1, num_train_dim));
 				th_trainData.start();
 				Log.d("khlee", "traindata_1");
 			}else{
@@ -607,7 +610,7 @@ public class WorkloadManager {
 		}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
 			cnt_cl2++;
 			if(cnt_cl2 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 2));
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 2, num_train_dim));
 				th_trainData.start();
 				Log.d("khlee", "traindata_2");
 			}else{
@@ -615,7 +618,7 @@ public class WorkloadManager {
 		}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
 			cnt_cl3++;
 			if(cnt_cl3 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 3));
+				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 3, num_train_dim));
 				th_trainData.start();
 				Log.d("khlee", "traindata_3");
 			}else{
@@ -679,21 +682,23 @@ class rtrainData implements Runnable{
 	public File mfWorkloadData;
 	public int mclasses;
 	private final String filename = "WorkloadData.txt";
+	public int mnum_train_dim;
 
-	public rtrainData(LinkedList ll, File fWorkloadData, int classes) {
+	public rtrainData(LinkedList ll, File fWorkloadData, int classes, int num_train_dim) {
 		mll = ll;
 		mfWorkloadData = fWorkloadData;
 		mclasses = classes;
+		mnum_train_dim = num_train_dim;
 	}
 	@Override
 	public void run() {
 		int index = 1;
 		StringBuilder sb = new StringBuilder();
 
-		if(mll.size() < 30){
-			Log.d("khlee", "trainData length is not 30");
+		if(mll.size() < mnum_train_dim){
+			Log.d("khlee", "trainData length is not dim");
 		}else{
-			Log.d("khlee", "trainData length is over 30");
+			//Log.d("khlee", "trainData length is over dim");
 			sb.append(mclasses);
 			sb.append(" ");
 			for(int i = 0; i < mll.size(); i++){
