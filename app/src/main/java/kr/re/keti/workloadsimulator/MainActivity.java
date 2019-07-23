@@ -290,12 +290,16 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnBreak.setBackgroundColor(Color.RED);
+                    car_break = true;
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnBreak.setBackgroundColor(Color.LTGRAY);
+                    car_break = false;
                 }
                 return false;
             }
         });
+
+
 
         btnDsmDisable = findViewById(R.id.btnDsmDisable);
         btnDsmDisable.setBackgroundColor(Color.LTGRAY);
@@ -800,8 +804,7 @@ public class MainActivity extends AppCompatActivity {
 //            car_break = false;
 //            tvBreak.setText("Break : false");
 //        }
-        ServerIP = etip.getText();
-        is_connect = true;
+
     }
 
     public void onPlus10(View view) {

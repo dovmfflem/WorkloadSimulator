@@ -23,6 +23,8 @@ import libsvm.svm_node;
 
 public class WorkloadManager {
 
+	private boolean is_debug = true;
+
 	private double Workload;
 	
 	private double speed_weight;
@@ -78,6 +80,7 @@ public class WorkloadManager {
 	private int heartrate_check_time = 1000;
 
 	private Context mContext;
+	///added for svm
 	private File fWorkloadData;
 	private final String filename = "WorkloadData.txt";
 	private FileWriter fw;
@@ -90,6 +93,7 @@ public class WorkloadManager {
 	private boolean trainning_flag = false;
 	private boolean predict_flag = true;
 	private int num_train_dim = 50;
+	private int num_stored_data = 500;
 
 	public WorkloadManager(Context context){
 		gstart = false;
@@ -129,13 +133,6 @@ public class WorkloadManager {
 		cnt_cl1 = 0;
 		cnt_cl2 = 0;
 		cnt_cl3 = 0;
-
-		init_svm_predict();
-
-		//학습되어있는지 확인이 필요함.
-		//일단 파일을 만든다.
-
-
 	}
 
 	private svm_model model;
@@ -176,9 +173,16 @@ public class WorkloadManager {
 
 		double v;
 		v = svm.svm_predict_probability(model,x,prob_estimates);
+		if(v > 0.5){
+			return (int)v;
+		}else{
+			return -1;
+		}
 
-		return (int)v;
+		//return (int)v;
 	}
+
+	private boolean is_trained_result = false;
 	
 	public void start(){
 		gstart = true;
@@ -190,6 +194,19 @@ public class WorkloadManager {
 		Thrd_dsm.start();
 		Thrd_rapid_steering.start();
         //Driver_Heart_checker.start();
+		check_train_result();
+		if(is_trained_result){
+			init_svm_predict();
+		}
+		Thrd_unstable_status.start();
+	}
+	public void check_train_result(){
+		File chfile = new File(fWorkloadData.toString() + "/result.model");
+		if(chfile.exists()){
+			is_trained_result = true;
+		}else{
+			is_trained_result = false;
+		}
 	}
 
 	public void stop(){
@@ -199,7 +216,12 @@ public class WorkloadManager {
 	public byte getWorkload(){
 
 		byte byte_workload = 0;
-		byte_workload = (byte)((Math.round(Workload*0.1)) * 10);
+		if(is_debug){
+			byte_workload = (byte)((Math.round(Workload)));
+		}else{
+			byte_workload = (byte)((Math.round(Workload*0.1)) * 10);
+		}
+
 
 		if(!heartcheck){
 			return byte_workload;
@@ -207,7 +229,7 @@ public class WorkloadManager {
 			if(heartFlag == STATE_HEART_NORMAL){
 				return byte_workload;
 			}else if(heartFlag == STATE_HEART_HIGH){
-				Log.d("VehicleDataManager", "State_Heart_High Return " + Workload);
+				if(is_debug) Log.d("VehicleDataManager", "State_Heart_High Return " + Workload);
 				return (byte)(byte_workload +10);
 			}else{
 				return byte_workload;
@@ -234,8 +256,9 @@ public class WorkloadManager {
 
 
 //		ll.add(speed / 25.0);
-//		ll.addLast(steering / 450.0);
 		ll.add((double)speed);
+//		ll.addLast(steering / 450.0);
+
 //		ll.addLast((double)steering);
 //		ll.addLast((double)DriverStatus);
 
@@ -321,7 +344,7 @@ public class WorkloadManager {
 				if(heartcheck){
 					if(heart_avg / NumberOfHeartData >= 83){
 						heartFlag = STATE_HEART_HIGH;
-						Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_HIGH" );
+						if(is_debug) Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_HIGH" );
 					}else if(heart_avg / NumberOfHeartData <= 50){
 						heartFlag = STATE_HEART_LOW;
 						//Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_LOW");
@@ -446,10 +469,29 @@ public class WorkloadManager {
 		}
 	});
 
-	private Thread Rnn_test = new Thread(new Runnable() {
+	private int unstable_time = 10000;
+	private boolean unstable_flag = false;
+	private int unstable_check_time = 1000;
+
+	private Thread Thrd_unstable_status = new Thread(new Runnable() {
 		@Override
 		public void run() {
-
+			while(gstart){
+				if(unstable_flag){
+					try {
+						Thread.sleep(unstable_time);
+						unstable_flag = false;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}else{
+					try {
+						Thread.sleep(unstable_check_time);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 		}
 	});
 
@@ -571,7 +613,7 @@ public class WorkloadManager {
 			String[] argv = {fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + "/result.model"};
 			try {
 				t.run(argv);
-				Log.d("khlee", "SVM Trainning finish");
+				if(is_debug) Log.d("khlee", "SVM Trainning finish");
 				predict_flag = true;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -582,61 +624,60 @@ public class WorkloadManager {
 
 	private void addWorkload(int work, String msg){
 
-//		fWorkloadData = new File(mContext.getFilesDir(),filename);
-//		try {
-//			fw = new FileWriter(fWorkloadData, true);
-//			if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
-//				fw.write("0 ");
-//			}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
-//
-//			}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
-//
-//			}else{
-//
-//			}
-//			fw.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-
+		int msg_index = 0;
 		if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
 			cnt_cl1++;
+			msg_index = 1;
 			if(cnt_cl1 <= cnt_limit){
 				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 1, num_train_dim));
 				th_trainData.start();
-				Log.d("khlee", "traindata_1");
+				if(is_debug) Log.d("khlee", "traindata_1");
 			}else{
 			}
 		}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
 			cnt_cl2++;
+			msg_index = 2;
 			if(cnt_cl2 <= cnt_limit){
 				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 2, num_train_dim));
 				th_trainData.start();
-				Log.d("khlee", "traindata_2");
+				if(is_debug) Log.d("khlee", "traindata_2");
 			}else{
 			}
 		}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
 			cnt_cl3++;
+			msg_index = 3;
 			if(cnt_cl3 <= cnt_limit){
 				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 3, num_train_dim));
 				th_trainData.start();
-				Log.d("khlee", "traindata_3");
+				if(is_debug) Log.d("khlee", "traindata_3");
 			}else{
 			}
 		}else{
-			Log.d("khlee", "Unknown addWorkload case");
+			msg_index = 0;
+			if(is_debug) Log.d("khlee", "Unknown addWorkload case");
 		}
 
 		if(cnt_cl1 + cnt_cl2 + cnt_cl3 >= cnt_limit*3 && trainning_flag){
 
 			Thrd_svm_training.start();
-			Log.d("khlee", "SVM Trainning start");
+			if(is_debug) Log.d("khlee", "SVM Trainning start");
 			trainning_flag = false;
+
 		}
 
 		int svm_result;
-		svm_result = predict_driver();
-		Log.d("khlee", "predict result" + svm_result);
+		if(is_trained_result){
+			svm_result = predict_driver();
+			if(svm_result == -1){
+				unstable_flag = true;
+			}else if(msg_index != svm_result){
+				unstable_flag = true;
+			}else{
+				//같으면 아무것ㄷ 안함.
+			}
+			if(is_debug) Log.d("khlee", "predict result" + svm_result);
+		}
+
 
 		if(!heartcheck){
             if(Workload + work >= 100) {
@@ -651,9 +692,19 @@ public class WorkloadManager {
 				Workload += (work*0.9);
 			}
 		}
+
+		if(unstable_flag){
+			if(Workload + (work*0.5) >= 100){
+				Workload = 100;
+			}else{
+				Workload += (work*0.2);
+				if(is_debug) Log.d("khlee","unstable up");
+			}
+		}
+
 		down_cnt = 5;
 		down_value = (int)(Workload / 5);
-		Log.d("khlee", msg + " Workload up");
+		if(is_debug) Log.d("khlee", msg + " Workload up");
 	}
 
 	private static final int STATE_NORMAL = 0;
