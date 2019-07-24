@@ -36,6 +36,8 @@ public class WorkloadManager {
 
 	private int steering;
 	private int speed;
+	private int rpm;
+	private boolean d_break;
 
 	private int down_index;
 	
@@ -81,25 +83,41 @@ public class WorkloadManager {
 
 	private Context mContext;
 	///added for svm
-	private File fWorkloadData;
+	public File fWorkloadData;
 	private final String filename = "WorkloadData.txt";
 	private FileWriter fw;
 
-	private LinkedList<Double> ll;
+	public LinkedList<Double> ll;
+	public LinkedList<Double> dl;
 	private Thread th_trainData;
 
 	private int cnt_cl1, cnt_cl2, cnt_cl3;
 	private int cnt_limit = 100;
 	private boolean trainning_flag = false;
 	private boolean predict_flag = true;
-	private int num_train_dim = 50;
+	public int num_train_dim = 50;
 	private int num_stored_data = 500;
+	public int data_counter = 0;
+
+
+	private svm_model model;
+	private int svm_type;
+	private int nr_class;
+
+	private int[] labels;
+	double[] prob_estimates;
+	private String model_filename = "/Wresult.model";
+	public boolean data_queue_flag = true;
+	public boolean dl_queue_flag = false;
+
 
 	public WorkloadManager(Context context){
 		gstart = false;
 		
 		steering = 0;
 		speed = 0;
+		rpm = 0;
+		d_break = false;
 				
 		flag_overtake = false;
 		flag_turn = false;
@@ -128,6 +146,10 @@ public class WorkloadManager {
 
 		mContext = context;
 		ll = new LinkedList<>();
+		dl = new LinkedList<>();
+		for(int i = 0; i < num_train_dim; i++){
+			dl.add(0.0);
+		}
 		fWorkloadData = mContext.getFilesDir();
 
 		cnt_cl1 = 0;
@@ -135,17 +157,11 @@ public class WorkloadManager {
 		cnt_cl3 = 0;
 	}
 
-	private svm_model model;
-	private int svm_type;
-	private int nr_class;
-
-	private int[] labels;
-	double[] prob_estimates;
 
 	public void init_svm_predict(){
 
 		try {
-			model = svm.svm_load_model(fWorkloadData.toString() + "/result.model");
+			model = svm.svm_load_model(fWorkloadData.toString() + model_filename);
 			svm_type = svm.svm_get_svm_type(model);
 			nr_class = svm.svm_get_nr_class(model);
 
@@ -158,7 +174,6 @@ public class WorkloadManager {
 		}
 
 	}
-
 
 
 	public int predict_driver(){
@@ -201,7 +216,7 @@ public class WorkloadManager {
 		Thrd_unstable_status.start();
 	}
 	public void check_train_result(){
-		File chfile = new File(fWorkloadData.toString() + "/result.model");
+		File chfile = new File(fWorkloadData.toString() + model_filename);
 		if(chfile.exists()){
 			is_trained_result = true;
 		}else{
@@ -253,19 +268,32 @@ public class WorkloadManager {
 
 
 	public void setqueue(){
+		data_counter++;
+		//1그대로
 
 
-//		ll.add(speed / 25.0);
-		ll.add((double)speed);
-//		ll.addLast(steering / 450.0);
+		//2변화량
+
+		ll.add(speed / 25.0);
+		//ll.add((double)speed);
+		ll.add(steering / 450.0);
+		ll.add(rpm / 8000.0);
+		if(d_break){
+			ll.add(0.9);
+		}else{
+			ll.add(0.1);
+		}
+
 
 //		ll.addLast((double)steering);
-//		ll.addLast((double)DriverStatus);
+		ll.addLast((double)DriverStatus);
 
 		if(ll.size() > num_train_dim){
 			ll.removeFirst();
-//			ll.removeFirst();
-//			ll.removeFirst();
+			ll.removeFirst();
+			ll.removeFirst();
+			ll.removeFirst();
+			ll.removeFirst();
 
 
 		}
@@ -274,15 +302,15 @@ public class WorkloadManager {
     public void setVehicleData(Bundle bundle) {
 		speed = bundle.getShort("speed");
 		steering = bundle.getShort("steering");
-		setqueue();
+		rpm = bundle.getShort("rpm");
+		d_break = bundle.getBoolean("break");
+		if(data_queue_flag) setqueue();
 
     }
 
     public void setDriverData(Bundle bundle) {
-//        eye = bundle.getBoolean("eye");
-//        sleep = bundle.getBoolean("sleep");
 		DriverStatus = bundle.getInt("driverstatus");
-		setqueue();
+		//setqueue();
     }
 
 	public void setHeartData(Bundle bundle){
@@ -610,7 +638,7 @@ public class WorkloadManager {
 		public void run() {
 
 			svm_train t = new svm_train();
-			String[] argv = {fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + "/result.model"};
+			String[] argv = {fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + model_filename};
 			try {
 				t.run(argv);
 				if(is_debug) Log.d("khlee", "SVM Trainning finish");
@@ -622,6 +650,7 @@ public class WorkloadManager {
 		}
 	});
 
+	private Thread th_trainData2;
 	private void addWorkload(int work, String msg){
 
 		int msg_index = 0;
@@ -629,8 +658,8 @@ public class WorkloadManager {
 			cnt_cl1++;
 			msg_index = 1;
 			if(cnt_cl1 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 1, num_train_dim));
-				th_trainData.start();
+				th_trainData2 = new Thread(new rtrainData2(this, 1));
+				th_trainData2.start();
 				if(is_debug) Log.d("khlee", "traindata_1");
 			}else{
 			}
@@ -638,8 +667,8 @@ public class WorkloadManager {
 			cnt_cl2++;
 			msg_index = 2;
 			if(cnt_cl2 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 2, num_train_dim));
-				th_trainData.start();
+				th_trainData2 = new Thread(new rtrainData2(this, 2));
+				th_trainData2.start();
 				if(is_debug) Log.d("khlee", "traindata_2");
 			}else{
 			}
@@ -647,8 +676,8 @@ public class WorkloadManager {
 			cnt_cl3++;
 			msg_index = 3;
 			if(cnt_cl3 <= cnt_limit){
-				th_trainData = new Thread(new rtrainData(ll, fWorkloadData, 3, num_train_dim));
-				th_trainData.start();
+				th_trainData2 = new Thread(new rtrainData2(this, 3));
+				th_trainData2.start();
 				if(is_debug) Log.d("khlee", "traindata_3");
 			}else{
 			}
@@ -769,10 +798,105 @@ class rtrainData implements Runnable{
 			} catch (IOException e) {
 				Log.d("khlee", "trainData file open fail");
 				e.printStackTrace();
-
-
 			}
 		}
+
+	}
+}
+
+class rtrainData2 implements Runnable{
+	public LinkedList mll;
+	public File mfWorkloadData;
+	public int mclasses;
+	private final String filename = "WorkloadData.txt";
+	public int mnum_train_dim;
+	public int data_counter;
+	public WorkloadManager mwm;
+
+	public rtrainData2(WorkloadManager wm, int classes) {
+		//mll = wm.ll;
+		mfWorkloadData = wm.fWorkloadData;
+		mclasses = classes;
+		mnum_train_dim = wm.num_train_dim;
+		data_counter = wm.data_counter;
+		mwm = wm;
+	}
+	@Override
+	public void run() {
+
+		int index = 1;
+		StringBuilder sb = new StringBuilder();
+
+		while(true){
+			//Log.d("khlee", "data_counter : " + mwm.data_counter);
+			//Log.d("khlee", "data_counter : " + data_counter);
+
+			if(mwm.data_counter - data_counter == mwm.num_train_dim){
+				mwm.data_queue_flag = false;
+				sb.append(mclasses);
+				sb.append(" ");
+				mll = mwm.ll;
+				for(int i = 0; i < mll.size(); i++) {
+					sb.append(i+1);
+					sb.append(":");
+					sb.append(mll.get(i));
+					mwm.dl.set(i,(double)mll.get(i));
+					sb.append(" ");
+				}
+				sb.append("\n");
+
+			try {
+				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
+				Log.d("khlee", "trainData write");
+
+				fw.write(sb.toString());
+				fw.close();
+			} catch (IOException e) {
+				Log.d("khlee", "trainData file open fail");
+				e.printStackTrace();
+			}
+				mwm.data_queue_flag = true;
+				mwm.dl_queue_flag = true;
+			break;
+			}else if(mwm.data_counter - data_counter > mwm.num_train_dim){
+				Log.d("khlee", "trainData length is over dim : " + mwm.data_counter +" "+ data_counter);
+				break;
+			}else{
+
+			}
+
+
+		}
+
+
+//		int index = 1;
+//		StringBuilder sb = new StringBuilder();
+//
+//		if(mll.size() < mnum_train_dim){
+//			Log.d("khlee", "trainData length is not dim");
+//		}else{
+//			//Log.d("khlee", "trainData length is over dim");
+//			sb.append(mclasses);
+//			sb.append(" ");
+//			for(int i = 0; i < mll.size(); i++){
+//				//sb.append(i+1);
+//				sb.append(":");
+//				sb.append(mll.get(i));
+//				sb.append(" ");
+//			}
+//			sb.append("\n");
+//
+//			try {
+//				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
+//				Log.d("khlee", "trainData write");
+//
+//				fw.write(sb.toString());
+//				fw.close();
+//			} catch (IOException e) {
+//				Log.d("khlee", "trainData file open fail");
+//				e.printStackTrace();
+//			}
+//		}
 
 	}
 }
