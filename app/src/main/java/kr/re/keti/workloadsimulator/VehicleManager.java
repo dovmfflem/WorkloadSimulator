@@ -96,40 +96,6 @@ public class VehicleManager {
     int size;
     byte[] buffer = new byte[64];
 
-
-    private Thread serialInputTh = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            while (true) {
-
-                try {
-                    size = mInputStream.read(buffer);
-                    Log.d("khlee", "input list(" + size + ") :  " + buffer[0] + " " + buffer[1] + " " + buffer[2] + " " + buffer[3] + " " + buffer[4] + " " + buffer[5] + " " + buffer[6] + " " + buffer[7] + " " + buffer[8]);
-                    if (buffer[0] == '[' && buffer[8] == ']') {
-                        Bundle serial_bundle = new Bundle();
-                        serial_bundle.putShort("speed", buffer[2]);
-                        serial_bundle.putShort("steering", buffer[3]);
-                        serial_bundle.putShort("turnsignal", buffer[4]);
-                        serial_bundle.putInt("heart", (int) buffer[5]);
-                        serial_bundle.putInt("driverstatus", buffer[6]);
-                        //Log.d("khlee", "good input " + buffer[1] + " " + buffer[2] + " " + buffer[3] + " " + buffer[4] + " " + buffer[5]);
-                        //Log.d("khlee", "Size : " + size);
-                        setDriverData(serial_bundle);
-                        setVehicleData(serial_bundle);
-                        setDriverheartData(serial_bundle);
-                        //serial_cnt++;
-
-                    } else {
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            }
-
-        }
-    });
-
     public void start() {
         wm.start();
         am.start();
@@ -181,6 +147,7 @@ public class VehicleManager {
             Log.d("VehicleDataManager", "turnsignal : " + turnsignal);
             Log.d("VehicleDataManager", "steering : " + steering);
             Log.d("VehicleDataManager", "rpm : " + rpm);
+            Log.d("VehicleDataManager", "break : " + d_break);
         }
     }
 
@@ -321,6 +288,8 @@ public class VehicleManager {
                             socket_bundle.putShort("turnsignal", (short)Integer.parseInt(data[2]));
                             socket_bundle.putInt("heart", Integer.parseInt(data[3]));
                             socket_bundle.putInt("driverstatus", Integer.parseInt(data[4]));
+                            socket_bundle.putBoolean("break", Boolean.parseBoolean(data[5]));
+
 
                             setDriverData(socket_bundle);
                             setVehicleData(socket_bundle);

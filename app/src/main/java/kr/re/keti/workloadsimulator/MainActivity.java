@@ -567,6 +567,9 @@ public class MainActivity extends AppCompatActivity {
                 sb.append(" ");
                 bundle.putInt("driverstatus", driverstatus);
                 sb.append(driverstatus);
+                bundle.putBoolean("break", car_break);
+                sb.append(" ");
+                sb.append(car_break);
 
                 vm.setDriverData(bundle);
                 vm.setVehicleData(bundle);

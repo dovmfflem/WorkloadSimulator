@@ -23,7 +23,7 @@ import libsvm.svm_node;
 
 public class WorkloadManager {
 
-	private boolean is_debug = true;
+	private boolean is_debug = false;
 
 	private double Workload;
 	
@@ -92,15 +92,15 @@ public class WorkloadManager {
 	private Thread th_trainData;
 
 	private int cnt_cl1, cnt_cl2, cnt_cl3;
-	private int cnt_limit = 100;
-	private boolean trainning_flag = false;
+	private int cnt_limit = 0;
+	public boolean trainning_flag = true;
 	private boolean predict_flag = true;
 	public int num_train_dim = 50;
 	private int num_stored_data = 500;
 	public int data_counter = 0;
 
 
-	private svm_model model;
+	public svm_model model;
 	private int svm_type;
 	private int nr_class;
 
@@ -175,27 +175,33 @@ public class WorkloadManager {
 
 	}
 
+	public boolean is_predict_start = false;
+	public Thread predict_data = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			is_predict_start = true;
+				if(dl_queue_flag && is_trained_result){
+					svm_node[] x = new svm_node[num_train_dim];
+					for(int j=0;j<num_train_dim;j++)
+					{
+						x[j] = new svm_node();
+						x[j].index = j+1;
+						x[j].value = dl.indexOf(j);
+					}
+					dl_queue_flag=false;
+					double v;
+					v = svm.svm_predict_probability(model,x,prob_estimates);
+					Log.d("khlee","prob_estimates.length = " + prob_estimates.length);
+					if(v < 0.5){
+						unstable_flag = true;
+					}else{
 
-	public int predict_driver(){
-		svm_node[] x = new svm_node[num_train_dim];
-		for(int j=0;j<num_train_dim;j++)
-		{
-			x[j] = new svm_node();
-			x[j].index = j+1;
-			x[j].value = ll.indexOf(j);
-		}
+					}
+				}
 
-
-		double v;
-		v = svm.svm_predict_probability(model,x,prob_estimates);
-		if(v > 0.5){
-			return (int)v;
-		}else{
-			return -1;
-		}
-
-		//return (int)v;
-	}
+			is_predict_start = false;
+			}
+	});
 
 	private boolean is_trained_result = false;
 	
@@ -212,6 +218,7 @@ public class WorkloadManager {
 		check_train_result();
 		if(is_trained_result){
 			init_svm_predict();
+			//predict_data.start();
 		}
 		Thrd_unstable_status.start();
 	}
@@ -277,7 +284,7 @@ public class WorkloadManager {
 		ll.add(speed / 25.0);
 		//ll.add((double)speed);
 		ll.add(steering / 450.0);
-		ll.add(rpm / 8000.0);
+		ll.add(rpm / 800.0);
 		if(d_break){
 			ll.add(0.9);
 		}else{
@@ -498,7 +505,7 @@ public class WorkloadManager {
 	});
 
 	private int unstable_time = 10000;
-	private boolean unstable_flag = false;
+	public boolean unstable_flag = false;  //이상하면 true, 정상이면 false
 	private int unstable_check_time = 1000;
 
 	private Thread Thrd_unstable_status = new Thread(new Runnable() {
@@ -507,8 +514,10 @@ public class WorkloadManager {
 			while(gstart){
 				if(unstable_flag){
 					try {
+						Log.d("khlee", "unstable time");
 						Thread.sleep(unstable_time);
 						unstable_flag = false;
+						Log.d("khlee", "unstable tiem done");
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -636,9 +645,9 @@ public class WorkloadManager {
 	private Thread Thrd_svm_training = new Thread(new Runnable() {
 		@Override
 		public void run() {
-
+			is_trained_result = true;
 			svm_train t = new svm_train();
-			String[] argv = {fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + model_filename};
+			String[] argv = {"-b","1", fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + model_filename};
 			try {
 				t.run(argv);
 				if(is_debug) Log.d("khlee", "SVM Trainning finish");
@@ -651,33 +660,34 @@ public class WorkloadManager {
 	});
 
 	private Thread th_trainData2;
+	public int msg_index = 0;
 	private void addWorkload(int work, String msg){
 
-		int msg_index = 0;
+		msg_index = 0;
 		if(msg.equals("VALUE_WORKLOAD_SLEEP") || (msg.equals("VALUE_WORKLOAD_NONFRONTEYE"))){
-			cnt_cl1++;
 			msg_index = 1;
 			if(cnt_cl1 <= cnt_limit){
-				th_trainData2 = new Thread(new rtrainData2(this, 1));
-				th_trainData2.start();
+				cnt_cl1++;
+				th_trainData = new Thread(new rtrainData(this, 1));
+				th_trainData.start();
 				if(is_debug) Log.d("khlee", "traindata_1");
 			}else{
 			}
 		}else if(msg.equals("VALUE_WORKLOAD_OVERTAKE") || (msg.equals("VALUE_WORKLOAD_TURN")) || (msg.equals("VALUE_WORKLOAD_UTURN"))){
-			cnt_cl2++;
 			msg_index = 2;
 			if(cnt_cl2 <= cnt_limit){
-				th_trainData2 = new Thread(new rtrainData2(this, 2));
-				th_trainData2.start();
+				cnt_cl2++;
+				th_trainData = new Thread(new rtrainData(this, 2));
+				th_trainData.start();
 				if(is_debug) Log.d("khlee", "traindata_2");
 			}else{
 			}
 		}else if(msg.equals("VALUE_WORKLOAD_ACCEL") || (msg.equals("VALUE_WORKLOAD_DECEL"))){
-			cnt_cl3++;
 			msg_index = 3;
 			if(cnt_cl3 <= cnt_limit){
-				th_trainData2 = new Thread(new rtrainData2(this, 3));
-				th_trainData2.start();
+				cnt_cl3++;
+				th_trainData = new Thread(new rtrainData(this, 3));
+				th_trainData.start();
 				if(is_debug) Log.d("khlee", "traindata_3");
 			}else{
 			}
@@ -695,16 +705,19 @@ public class WorkloadManager {
 		}
 
 		int svm_result;
-		if(is_trained_result){
-			svm_result = predict_driver();
-			if(svm_result == -1){
-				unstable_flag = true;
-			}else if(msg_index != svm_result){
-				unstable_flag = true;
-			}else{
-				//같으면 아무것ㄷ 안함.
-			}
-			if(is_debug) Log.d("khlee", "predict result" + svm_result);
+		if(is_trained_result && !trainning_flag){
+			th_trainData = new Thread(new rtrainData(this, -1));
+			th_trainData.start();
+
+//			svm_result = predict_driver();
+//			if(svm_result == -1){
+//				unstable_flag = true;
+//			}else if(msg_index != svm_result){
+//				unstable_flag = true;
+//			}else{
+//				//같으면 아무것ㄷ 안함.
+//			}
+//			if(is_debug) Log.d("khlee", "predict result" + svm_result);
 		}
 
 
@@ -763,57 +776,10 @@ class rtrainData implements Runnable{
 	public int mclasses;
 	private final String filename = "WorkloadData.txt";
 	public int mnum_train_dim;
-
-	public rtrainData(LinkedList ll, File fWorkloadData, int classes, int num_train_dim) {
-		mll = ll;
-		mfWorkloadData = fWorkloadData;
-		mclasses = classes;
-		mnum_train_dim = num_train_dim;
-	}
-	@Override
-	public void run() {
-		int index = 1;
-		StringBuilder sb = new StringBuilder();
-
-		if(mll.size() < mnum_train_dim){
-			Log.d("khlee", "trainData length is not dim");
-		}else{
-			//Log.d("khlee", "trainData length is over dim");
-			sb.append(mclasses);
-			sb.append(" ");
-			for(int i = 0; i < mll.size(); i++){
-				//sb.append(i+1);
-				sb.append(":");
-				sb.append(mll.get(i));
-				sb.append(" ");
-			}
-			sb.append("\n");
-
-			try {
-				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
-				Log.d("khlee", "trainData write");
-
-				fw.write(sb.toString());
-				fw.close();
-			} catch (IOException e) {
-				Log.d("khlee", "trainData file open fail");
-				e.printStackTrace();
-			}
-		}
-
-	}
-}
-
-class rtrainData2 implements Runnable{
-	public LinkedList mll;
-	public File mfWorkloadData;
-	public int mclasses;
-	private final String filename = "WorkloadData.txt";
-	public int mnum_train_dim;
 	public int data_counter;
 	public WorkloadManager mwm;
 
-	public rtrainData2(WorkloadManager wm, int classes) {
+	public rtrainData(WorkloadManager wm, int classes) {
 		//mll = wm.ll;
 		mfWorkloadData = wm.fWorkloadData;
 		mclasses = classes;
@@ -828,8 +794,7 @@ class rtrainData2 implements Runnable{
 		StringBuilder sb = new StringBuilder();
 
 		while(true){
-			//Log.d("khlee", "data_counter : " + mwm.data_counter);
-			//Log.d("khlee", "data_counter : " + data_counter);
+
 
 			if(mwm.data_counter - data_counter == mwm.num_train_dim){
 				mwm.data_queue_flag = false;
@@ -844,19 +809,25 @@ class rtrainData2 implements Runnable{
 					sb.append(" ");
 				}
 				sb.append("\n");
+				if(mwm.trainning_flag){
+					try {
+						FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
+						Log.d("khlee", "trainData write");
 
-			try {
-				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
-				Log.d("khlee", "trainData write");
+						fw.write(sb.toString());
+						fw.close();
+					} catch (IOException e) {
+						Log.d("khlee", "trainData file open fail");
+						e.printStackTrace();
+					}
+				}
 
-				fw.write(sb.toString());
-				fw.close();
-			} catch (IOException e) {
-				Log.d("khlee", "trainData file open fail");
-				e.printStackTrace();
-			}
 				mwm.data_queue_flag = true;
 				mwm.dl_queue_flag = true;
+				if(mclasses == -1){
+					Thread predict = new Thread(new predict_data(mwm));
+					predict.start();
+				}
 			break;
 			}else if(mwm.data_counter - data_counter > mwm.num_train_dim){
 				Log.d("khlee", "trainData length is over dim : " + mwm.data_counter +" "+ data_counter);
@@ -864,39 +835,42 @@ class rtrainData2 implements Runnable{
 			}else{
 
 			}
-
-
 		}
+	}
+}
 
+class predict_data implements Runnable{
 
-//		int index = 1;
-//		StringBuilder sb = new StringBuilder();
-//
-//		if(mll.size() < mnum_train_dim){
-//			Log.d("khlee", "trainData length is not dim");
-//		}else{
-//			//Log.d("khlee", "trainData length is over dim");
-//			sb.append(mclasses);
-//			sb.append(" ");
-//			for(int i = 0; i < mll.size(); i++){
-//				//sb.append(i+1);
-//				sb.append(":");
-//				sb.append(mll.get(i));
-//				sb.append(" ");
-//			}
-//			sb.append("\n");
-//
-//			try {
-//				FileWriter fw = new FileWriter(new File(mfWorkloadData.toString()+"/" + filename),true);
-//				Log.d("khlee", "trainData write");
-//
-//				fw.write(sb.toString());
-//				fw.close();
-//			} catch (IOException e) {
-//				Log.d("khlee", "trainData file open fail");
-//				e.printStackTrace();
-//			}
-//		}
+	WorkloadManager mwm;
+	public predict_data(WorkloadManager wm){
+		mwm = wm;
+	}
 
+	@Override
+	public void run() {
+				svm_node[] x = new svm_node[mwm.num_train_dim];
+				StringBuilder sb = new StringBuilder();
+				int now_state = mwm.msg_index;
+				for(int j=0;j<mwm.num_train_dim;j++)
+				{
+					x[j] = new svm_node();
+					x[j].index = j+1;
+					x[j].value = mwm.dl.get(j);
+					sb.append(x[j].value);
+					sb.append(" ");
+
+				}
+				//Log.d("khlee", "trained data : " + sb.toString());
+				mwm.dl_queue_flag=false;
+				double v;
+				double[] prob_estimates = new double[4];
+				v = svm.svm_predict_probability(mwm.model,x,prob_estimates);
+				Log.d("khlee", "predict result : " + v + "now state : " + now_state);
+				//Log.d("khlee", "predict result : " + prob_estimates[0] + " " + prob_estimates[1] + " " + prob_estimates[2] + " " + prob_estimates[3]);
+				if(now_state != (int)v){
+					mwm.unstable_flag = true;
+				}else{
+
+				}
 	}
 }
