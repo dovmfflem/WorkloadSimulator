@@ -5,16 +5,26 @@ import android.os.Bundle;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.LinkedList;
 
 import kr.re.keti.VehicleDataContainer.TurnSignal;
+import libsvm.svm;
+import libsvm.svm_model;
+import libsvm.svm_node;
 
 public class AlertnessManager {
-	
+	public boolean is_debug = false;
+
 	private double Alertness;
 	
 	private int speed;
 	private boolean isbreak;
 	private int steering;
+	private int rpm;
+	private boolean d_break;
+
 	
 	private boolean flag_steering;
 	private boolean flag_dsm;
@@ -64,6 +74,34 @@ public class AlertnessManager {
 	private int heartrate_check_time = 1000;
 
 	private Context mContext;
+	///added for svm
+	public File fAlertnessData;
+	private final String filename = "AlertnessData.txt";
+	private FileWriter fw;
+
+	public LinkedList<Double> ll;
+	public LinkedList<Double> dl;
+	private Thread th_trainData;
+
+	private int cnt_cl1, cnt_cl2, cnt_cl3;
+	private int cnt_limit = 0;
+	public boolean trainning_flag = true;
+	private boolean predict_flag = true;
+	public int num_train_dim = 50;
+	private int num_stored_data = 500;
+	public int data_counter = 0;
+
+
+	public svm_model model;
+	private int svm_type;
+	private int nr_class;
+
+	private int[] labels;
+	double[] prob_estimates;
+	private String model_filename = "/Aresult.model";
+	public boolean data_queue_flag = true;
+	public boolean dl_queue_flag = false;
+	private boolean is_trained_result = false;
 
 	public AlertnessManager(Context context){
 		dsm_weight = 1;
@@ -89,13 +127,110 @@ public class AlertnessManager {
 
 		mContext = context;
 
+		ll = new LinkedList<>();
+		dl = new LinkedList<>();
+		for(int i = 0; i < num_train_dim; i++){
+			dl.add(0.0);
+		}
+		fAlertnessData = mContext.getFilesDir();
+
+		cnt_cl1 = 0;
+		cnt_cl2 = 0;
+		cnt_cl3 = 0;
+
 	}
+	//svm add
+	public void init_svm_predict(){
+
+		try {
+			model = svm.svm_load_model(fAlertnessData.toString() + model_filename);
+			svm_type = svm.svm_get_svm_type(model);
+			nr_class = svm.svm_get_nr_class(model);
+
+			labels=new int[nr_class];
+			svm.svm_get_labels(model,labels);
+			prob_estimates = new double[nr_class];
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+	public void setqueue() {
+		data_counter++;
+		//1그대로
+
+
+		//2변화량
+
+		ll.add(speed / 25.0);
+		//ll.add((double)speed);
+		ll.add(steering / 450.0);
+		ll.add(rpm / 800.0);
+		if (d_break) {
+			ll.add(0.9);
+		} else {
+			ll.add(0.1);
+		}
+	}
+
+	private int unstable_time = 10000;
+	public boolean unstable_flag = false;  //이상하면 true, 정상이면 false
+	private int unstable_check_time = 1000;
+	public int msg_index = 0;
+
+
+	private Thread Thrd_unstable_status = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			while(gstart){
+				if(unstable_flag){
+					try {
+						Log.d("khlee", "unstable time");
+						Thread.sleep(unstable_time);
+						unstable_flag = false;
+						Log.d("khlee", "unstable tiem done");
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}else{
+					try {
+						Thread.sleep(unstable_check_time);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	});
+
+	private Thread Thrd_svm_training = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			is_trained_result = true;
+			svm_train t = new svm_train();
+			String[] argv = {"-b","1", fAlertnessData.toString() + "/" + filename, fAlertnessData.toString() + model_filename};
+			try {
+				t.run(argv);
+				if(is_debug) Log.d("khlee", "SVM Trainning finish");
+				predict_flag = true;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+		}
+	});
+
+
 
 
 	public void setVehicleData(Bundle bundle) {
 		steering = bundle.getShort("steering");
 		speed = bundle.getShort("speed");
 		turn_signal = bundle.getShort("turnsignal");
+		d_break = bundle.getBoolean("break");
+		if(data_queue_flag) setqueue();
+
 	}
 
 	public void setDriverData(Bundle bundle) {
@@ -124,11 +259,16 @@ public class AlertnessManager {
 
 	public byte getAlertness(){
 
-		byte byte_alertness;
+		byte byte_alertness = 0;
 		//        alertness = Math.round(alertness*0.1);
 //        alertness_packet[3] = (byte)(alertness * 10);
 
-		byte_alertness = (byte)((Math.round(Alertness*0.1)) * 10);
+		if(is_debug){
+			byte_alertness = (byte)((Math.round(Alertness)));
+		}else{
+			byte_alertness = (byte)((Math.round(Alertness*0.1)) * 10);
+		}
+
 		if(!heartcheck){
 			return byte_alertness;
 		}else {
@@ -173,6 +313,20 @@ public class AlertnessManager {
 		Thrd_dsm.start();
 		Thrd_rapid_steering.start();
 		//Driver_Heart_checker.start();
+		check_train_result();
+		if(is_trained_result){
+			init_svm_predict();
+			//predict_data.start();
+		}
+		Thrd_unstable_status.start();
+	}
+	public void check_train_result(){
+		File chfile = new File(fAlertnessData.toString() + model_filename);
+		if(chfile.exists()){
+			is_trained_result = true;
+		}else{
+			is_trained_result = false;
+		}
 	}
 
 	public void stop(){
@@ -453,7 +607,54 @@ public class AlertnessManager {
 	
 	
 	private void addAlertness(int alert, String msg){
-        if(!heartcheck){
+
+		msg_index = 0;
+		if(msg.equals("VALUE_ALERTNESS_SLEEP") || (msg.equals("VALUE_ALERTNESS_NONFRONTEYE"))){
+			msg_index = 1;
+			if(cnt_cl1 <= cnt_limit){
+				cnt_cl1++;
+				th_trainData = new Thread(new rtrainData_am(this, 1));
+				th_trainData.start();
+				if(is_debug) Log.d("khlee", "traindata_1");
+			}else{
+			}
+		}else if(msg.equals("VALUE_ALERTNESS_INTENTOP") || (msg.equals("VALUE_ALERTNESS_IGNOREOP"))){
+			msg_index = 2;
+			if(cnt_cl2 <= cnt_limit){
+				cnt_cl2++;
+				th_trainData = new Thread(new rtrainData_am(this, 2));
+				th_trainData.start();
+				if(is_debug) Log.d("khlee", "traindata_2");
+			}else{
+			}
+		}else if(msg.equals("VALUE_ALERTNESS_DECEL")){
+			msg_index = 3;
+			if(cnt_cl3 <= cnt_limit){
+				cnt_cl3++;
+				th_trainData = new Thread(new rtrainData_am(this, 3));
+				th_trainData.start();
+				if(is_debug) Log.d("khlee", "traindata_3");
+			}else{
+			}
+		}else{
+			msg_index = 0;
+			if(is_debug) Log.d("khlee", "Unknown addWorkload case");
+		}
+
+		if(cnt_cl1 + cnt_cl2 + cnt_cl3 >= cnt_limit*3 && trainning_flag){
+
+			Thrd_svm_training.start();
+			if(is_debug) Log.d("khlee", "SVM Trainning start");
+			trainning_flag = false;
+
+		}
+		if(is_trained_result && !trainning_flag){
+			th_trainData = new Thread(new rtrainData_am(this, -1));
+			th_trainData.start();
+		}
+
+
+		if(!heartcheck){
             if(Alertness + alert >= 100) {
                 Alertness = 100;
             }else{
@@ -486,4 +687,108 @@ public class AlertnessManager {
 	private static final int STATE_HEART_NORMAL = 0;
 	private static final int STATE_HEART_HIGH = 1;
 	private static final int STATE_HEART_LOW = 2;
+}
+
+class rtrainData_am implements Runnable{
+	public LinkedList mll;
+	public File mfAlertnessData;
+	public int mclasses;
+	private final String filename = "AlertnessData.txt";
+	public int mnum_train_dim;
+	public int data_counter;
+	public AlertnessManager mam;
+
+	public rtrainData_am(AlertnessManager am, int classes) {
+		//mll = wm.ll;
+		mfAlertnessData = am.fAlertnessData;
+		mclasses = classes;
+		mnum_train_dim = am.num_train_dim;
+		data_counter = am.data_counter;
+		mam = am;
+	}
+	@Override
+	public void run() {
+
+		int index = 1;
+		StringBuilder sb = new StringBuilder();
+
+		while(true){
+
+
+			if(mam.data_counter - data_counter == mam.num_train_dim){
+				mam.data_queue_flag = false;
+				sb.append(mclasses);
+				sb.append(" ");
+				mll = mam.ll;
+				for(int i = 0; i < mll.size(); i++) {
+					sb.append(i+1);
+					sb.append(":");
+					sb.append(mll.get(i));
+					mam.dl.set(i,(double)mll.get(i));
+					sb.append(" ");
+				}
+				sb.append("\n");
+				if(mam.trainning_flag){
+					try {
+						FileWriter fw = new FileWriter(new File(mfAlertnessData.toString()+"/" + filename),true);
+						Log.d("khlee", "trainData write");
+
+						fw.write(sb.toString());
+						fw.close();
+					} catch (IOException e) {
+						Log.d("khlee", "trainData file open fail");
+						e.printStackTrace();
+					}
+				}
+
+				mam.data_queue_flag = true;
+				mam.dl_queue_flag = true;
+				if(mclasses == -1){
+					Thread predict = new Thread(new predict_data_am(mam));
+					predict.start();
+				}
+				break;
+			}else if(mam.data_counter - data_counter > mam.num_train_dim){
+				Log.d("khlee", "trainData length is over dim : " + mam.data_counter +" "+ data_counter);
+				break;
+			}else{
+
+			}
+		}
+	}
+}
+
+class predict_data_am implements Runnable{
+
+	AlertnessManager mam;
+	public predict_data_am(AlertnessManager am){
+		mam = am;
+	}
+
+	@Override
+	public void run() {
+		svm_node[] x = new svm_node[mam.num_train_dim];
+		StringBuilder sb = new StringBuilder();
+		int now_state = mam.msg_index;
+		for(int j=0;j<mam.num_train_dim;j++)
+		{
+			x[j] = new svm_node();
+			x[j].index = j+1;
+			x[j].value = mam.dl.get(j);
+			sb.append(x[j].value);
+			sb.append(" ");
+
+		}
+		//Log.d("khlee", "trained data : " + sb.toString());
+		mam.dl_queue_flag=false;
+		double v;
+		double[] prob_estimates = new double[4];
+		v = svm.svm_predict_probability(mam.model,x,prob_estimates);
+		Log.d("khlee", "predict result : " + v + "now state : " + now_state);
+		//Log.d("khlee", "predict result : " + prob_estimates[0] + " " + prob_estimates[1] + " " + prob_estimates[2] + " " + prob_estimates[3]);
+		if(now_state != (int)v){
+			mam.unstable_flag = true;
+		}else{
+		}
+	}
 }

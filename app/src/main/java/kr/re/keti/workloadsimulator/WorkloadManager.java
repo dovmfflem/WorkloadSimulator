@@ -174,35 +174,6 @@ public class WorkloadManager {
 		}
 
 	}
-
-	public boolean is_predict_start = false;
-	public Thread predict_data = new Thread(new Runnable() {
-		@Override
-		public void run() {
-			is_predict_start = true;
-				if(dl_queue_flag && is_trained_result){
-					svm_node[] x = new svm_node[num_train_dim];
-					for(int j=0;j<num_train_dim;j++)
-					{
-						x[j] = new svm_node();
-						x[j].index = j+1;
-						x[j].value = dl.indexOf(j);
-					}
-					dl_queue_flag=false;
-					double v;
-					v = svm.svm_predict_probability(model,x,prob_estimates);
-					Log.d("khlee","prob_estimates.length = " + prob_estimates.length);
-					if(v < 0.5){
-						unstable_flag = true;
-					}else{
-
-					}
-				}
-
-			is_predict_start = false;
-			}
-	});
-
 	private boolean is_trained_result = false;
 	
 	public void start(){
@@ -713,21 +684,9 @@ public class WorkloadManager {
 			trainning_flag = false;
 
 		}
-
-		int svm_result;
 		if(is_trained_result && !trainning_flag){
 			th_trainData = new Thread(new rtrainData(this, -1));
 			th_trainData.start();
-
-//			svm_result = predict_driver();
-//			if(svm_result == -1){
-//				unstable_flag = true;
-//			}else if(msg_index != svm_result){
-//				unstable_flag = true;
-//			}else{
-//				//같으면 아무것ㄷ 안함.
-//			}
-//			if(is_debug) Log.d("khlee", "predict result" + svm_result);
 		}
 
 //heart 알고리즘 변경으로 인한 삭제
@@ -890,7 +849,6 @@ class predict_data implements Runnable{
 				if(now_state != (int)v){
 					mwm.unstable_flag = true;
 				}else{
-
 				}
 	}
 }
