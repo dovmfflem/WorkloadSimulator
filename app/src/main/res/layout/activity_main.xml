@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Workload/Alertness Simulator"
+        android:text="Workload/Alertness Simulator(ver tablet)"
         android:textSize="40dp" />
 
 
@@ -154,12 +154,50 @@
                     android:id="@+id/seekBar2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
-                <ImageView
-                    android:id="@+id/imageView"
-                    android:layout_width="600dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="40dp"
-                    app:srcCompat="@drawable/small_steering_wheel" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/imageView"
+                        android:layout_width="500dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="40dp"
+                        app:srcCompat="@drawable/small_steering_wheel" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <Button
+                            android:id="@+id/btnnormal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:text="Normal"
+                            android:textSize="12sp"
+                            />
+
+                        <Button
+                            android:id="@+id/btnabnormal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:text="Abnormal"
+                            android:textSize="12sp"
+                             />
+
+                        <Button
+                            android:id="@+id/btnsimul"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Simul"
+                            android:onClick="onSimul"/>
+                    </LinearLayout>
+                </LinearLayout>
 
 
                 <ImageView
@@ -205,7 +243,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onSpeedUp"
                         android:text="Speed +"
                         android:textSize="20dp" />
 
@@ -215,7 +252,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onSpeedDown"
                         android:text="Speed -"
                         android:textSize="20dp" />
                 </LinearLayout>
@@ -231,7 +267,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onRpmUp"
                         android:text="Rpm +"
                         android:textSize="20dp" />
 
@@ -241,7 +276,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onRpmDown"
                         android:text="Rpm -"
                         android:textSize="20dp" />
                 </LinearLayout>
@@ -257,7 +291,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onHeartUp"
                         android:text="Heart Rate +"
                         android:textSize="20dp" />
 
@@ -267,7 +300,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onHeartDown"
                         android:text="Heart rate -"
                         android:textSize="20dp" />
                 </LinearLayout>
@@ -283,7 +315,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onTurnNone"
                         android:text="None"
                         android:textSize="20dp" />
 
@@ -293,7 +324,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onTurnLeft"
                         android:text="Left"
                         android:textSize="20dp" />
 
@@ -303,7 +333,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onTurnRight"
                         android:text="right"
                         android:textSize="20dp" />
 
@@ -313,7 +342,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onTurnBoth"
                         android:text="Both"
                         android:textSize="20dp" />
                 </LinearLayout>
@@ -355,7 +383,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onDsmDisable"
                         android:text="Clear"
                         android:textSize="20dp" />
 
@@ -365,7 +392,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onDsmEyeF"
                         android:text="Eye Forward"
                         android:textSize="20dp" />
 
@@ -375,7 +401,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onDsmFace"
                         android:text="Lost face"
                         android:textSize="20dp" />
 
@@ -392,7 +417,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onDsm1stSleep"
                         android:text="1st sleep"
                         android:textSize="20dp" />
 
@@ -402,7 +426,6 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
                         android:layout_weight="1"
-                        android:onClick="onDsm2ndSleep"
                         android:text="2nd sleep"
                         android:textSize="20dp" />
                 </LinearLayout>
@@ -439,7 +462,7 @@
                         android:layout_weight="1"
                         android:ems="10"
                         android:inputType="textPersonName"
-                        android:text="127.0.0.1" />
+                        android:text="10.0.0.142" />
 
                     <Button
                         android:id="@+id/btnConnect"

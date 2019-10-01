@@ -1,1 +1,1 @@
-include ':app', ':libsvm'
+include ':app', ':libsvm', ':ScheduleAgent'

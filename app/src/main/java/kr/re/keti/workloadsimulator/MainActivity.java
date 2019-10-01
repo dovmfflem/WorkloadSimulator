@@ -2,6 +2,7 @@ package kr.re.keti.workloadsimulator;
 
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
@@ -22,17 +23,25 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.TimerTask;
 
+import kr.re.keti.ConfigTask;
 import kr.re.keti.DriverDataContainer;
 import kr.re.keti.VehicleDataContainer;
+import kr.re.keti.ScheduleAgent;
 
 
 public class MainActivity extends AppCompatActivity {
+
+    private Handler mHandler;
 
     private final int SEEKBAR_MAX = 9000;
     private final int SEEKBAR_ZERO = SEEKBAR_MAX/2;
@@ -71,6 +80,9 @@ public class MainActivity extends AppCompatActivity {
     private Button btnDsm1stsleep;
     private Button btnDsm2ndsleep;
 
+    private Button btnNormal;
+    private Button btnAbnormal;
+
 
     private Button btnConnect;
 
@@ -80,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     ////socket
     private String html = "";
-    private Handler mHandler;
+
 
     private Socket socket;
 
@@ -107,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
     private int RapidSteer = 0; //0 idle, 4 left, 2 right
     private int heart_rate = 0;
     private int driverstatus = 0;
+    private short modelnum = 0;
 
     private byte Workload_packet[];
     private byte Alertness_packet[];
@@ -130,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
+
         tvSpeed = findViewById(R.id.tvSpeed);
         tvRpm = findViewById(R.id.tvRPM);
         tvHeartrate = findViewById(R.id.tvHeartrate);
@@ -148,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnSpeedUp.setBackgroundColor(Color.RED);
+                    onSpeedUp();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnSpeedUp.setBackgroundColor(Color.LTGRAY);
                 }
@@ -162,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnSpeedDown.setBackgroundColor(Color.RED);
+                    onSpeedDown();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnSpeedDown.setBackgroundColor(Color.LTGRAY);
                 }
@@ -176,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnRpmUp.setBackgroundColor(Color.RED);
+                    onRpmUp();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnRpmUp.setBackgroundColor(Color.LTGRAY);
                 }
@@ -190,6 +207,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnRpmDown.setBackgroundColor(Color.RED);
+                    onRpmDown();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnRpmDown.setBackgroundColor(Color.LTGRAY);
                 }
@@ -204,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnHeartrateUp.setBackgroundColor(Color.RED);
+                    onHeartUp();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnHeartrateUp.setBackgroundColor(Color.LTGRAY);
                 }
@@ -219,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnHeartrateDown.setBackgroundColor(Color.RED);
+                    onHeartDown();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnHeartrateDown.setBackgroundColor(Color.LTGRAY);
                 }
@@ -234,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnTurnNone.setBackgroundColor(Color.RED);
+                    onTurnNone();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnTurnNone.setBackgroundColor(Color.LTGRAY);
                 }
@@ -248,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnTurnLeft.setBackgroundColor(Color.RED);
+                    onTurnLeft();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnTurnLeft.setBackgroundColor(Color.LTGRAY);
                 }
@@ -262,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnTurnRight.setBackgroundColor(Color.RED);
+                    onTurnRight();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnTurnRight.setBackgroundColor(Color.LTGRAY);
                 }
@@ -276,6 +299,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnTurnBoth.setBackgroundColor(Color.RED);
+                    onTurnBoth();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnTurnBoth.setBackgroundColor(Color.LTGRAY);
                 }
@@ -308,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnDsmDisable.setBackgroundColor(Color.RED);
+                    onDsmDisable();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnDsmDisable.setBackgroundColor(Color.LTGRAY);
                 }
@@ -322,6 +347,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnDsmEye.setBackgroundColor(Color.RED);
+                    onDsmEyeF();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnDsmEye.setBackgroundColor(Color.LTGRAY);
                 }
@@ -336,6 +362,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnDsmFace.setBackgroundColor(Color.RED);
+                    onDsmFace();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnDsmFace.setBackgroundColor(Color.LTGRAY);
                 }
@@ -350,6 +377,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnDsm1stsleep.setBackgroundColor(Color.RED);
+                    onDsm1stSleep();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnDsm1stsleep.setBackgroundColor(Color.LTGRAY);
                 }
@@ -364,6 +392,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
                     btnDsm2ndsleep.setBackgroundColor(Color.RED);
+                    onDsm2ndSleep();
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     btnDsm2ndsleep.setBackgroundColor(Color.LTGRAY);
                 }
@@ -386,6 +415,33 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        btnNormal = findViewById(R.id.btnnormal);
+        btnNormal.setBackgroundColor(Color.LTGRAY);
+        btnNormal.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    btnNormal.setBackgroundColor(Color.RED);
+                    btnAbnormal.setBackgroundColor(Color.LTGRAY);
+                    onModelNormal();
+                }
+                return false;
+            }
+        });
+
+        btnAbnormal = findViewById(R.id.btnabnormal);
+        btnAbnormal.setBackgroundColor(Color.LTGRAY);
+        btnAbnormal.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    btnAbnormal.setBackgroundColor(Color.RED);
+                    btnNormal.setBackgroundColor(Color.LTGRAY);
+                    onModelAbnormal();
+                }
+                return false;
+            }
+        });
 
 
 
@@ -428,7 +484,9 @@ public class MainActivity extends AppCompatActivity {
 
 
         tvWorkload = findViewById(R.id.tvWorkload);
+        tvWorkload.setVisibility(View.INVISIBLE);
         tvAlertness = findViewById(R.id.tvAlertness);
+        tvAlertness.setVisibility(View.INVISIBLE);
 
         seekbar.setMax(SEEKBAR_MAX);
         seekbar.setProgress(SEEKBAR_ZERO);
@@ -475,7 +533,7 @@ public class MainActivity extends AppCompatActivity {
 //        btnConnect = findViewById(R.id.btnConnect);
 
         vm = new VehicleManager(getApplicationContext());
-        vm.start();
+        //vm.start();
 
         threadBreak.start();
         connectThread.start();
@@ -492,6 +550,8 @@ public class MainActivity extends AppCompatActivity {
         rotate.setFillAfter(true);
         view.startAnimation(rotate);
     }
+
+
 
     final Handler handler = new Handler() {
         @Override
@@ -556,6 +616,9 @@ public class MainActivity extends AppCompatActivity {
                 bundle.putShort("steering", steering);
                 bundle.putShort("turnsignal", turn_signal);
                 bundle.putInt("heart", heart_rate);
+                bundle.putInt("driverstatus", driverstatus);
+                bundle.putBoolean("break", car_break);
+                bundle.putShort("model", modelnum);
                 sb.setLength(0);
                 sb.append(speed);
                 sb.append(" ");
@@ -565,14 +628,15 @@ public class MainActivity extends AppCompatActivity {
                 sb.append(" ");
                 sb.append(heart_rate);
                 sb.append(" ");
-                bundle.putInt("driverstatus", driverstatus);
                 sb.append(driverstatus);
-                bundle.putBoolean("break", car_break);
                 sb.append(" ");
                 sb.append(car_break);
+                sb.append(" ");
+                sb.append(modelnum);
 
                 vm.setDriverData(bundle);
                 vm.setVehicleData(bundle);
+                vm.setDriverheartData(bundle);
 
 
                 PrintWriter out = new PrintWriter(networkWriter, true);
@@ -589,14 +653,15 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     });
-
+    public int breakdown_scale = 1;
     private Thread threadBreak = new Thread(new Runnable() {
         @Override
         public void run() {
+
             while(true){
                 if(car_break == true){
                     if(speed >= 1){
-                        speed -= 1;
+                        speed = (short) (speed - (breakdown_scale));
                         outhandler.sendEmptyMessage(0);
                     }else{
                         speed = 0;
@@ -605,7 +670,12 @@ public class MainActivity extends AppCompatActivity {
 
                 }
                 try {
-                    Thread.sleep(100);
+                    if(car_break){
+                        breakdown_scale+=1;
+                    }else{
+                        breakdown_scale = 1;
+                    }
+                    Thread.sleep(70);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -615,6 +685,7 @@ public class MainActivity extends AppCompatActivity {
     final Handler outhandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
+            if(speed <=0) speed = 0;
             tvSpeed.setText("Speed : " + speed);
         }
     };
@@ -672,7 +743,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         try {
-            socket.close();
+            if(socket != null) {
+                socket.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -709,25 +782,26 @@ public class MainActivity extends AppCompatActivity {
         is_connect = true;
     }
 
-    public void onSpeedUp(View view) {
+
+    public void onSpeedUp() {
         speed += plus;
         if(speed >= 250){
             speed = 250;
             Toast.makeText(getApplicationContext(),"Speed Limit 250km",Toast.LENGTH_SHORT).show();
         }
         tvSpeed.setText("Speed : " + speed);
-
     }
 
-    public void onSpeedDown(View view) {
+    public void onSpeedDown() {
         speed -= plus;
         if(speed <= 0){
             speed = 0;
         }
         tvSpeed.setText("Speed : " + speed);
+        Log.d("khlee", "scHandler send message");
     }
 
-    public void onRpmUp(View view) {
+    public void onRpmUp() {
         rpm += (plus*100);
         if(rpm >= 8000){
             rpm = 8000;
@@ -736,7 +810,7 @@ public class MainActivity extends AppCompatActivity {
         tvRpm.setText("Rpm : " + rpm);
     }
 
-    public void onRpmDown(View view) {
+    public void onRpmDown() {
         rpm -= (plus*100);
         if(rpm <= 0){
             rpm = 0;
@@ -744,57 +818,57 @@ public class MainActivity extends AppCompatActivity {
         tvRpm.setText("Rpm : " + rpm);
     }
 
-    public void onHeartUp(View view) {
+    public void onHeartUp() {
         heart_rate += plus;
         tvHeartrate.setText("Heart rate : " + heart_rate);
     }
 
-    public void onHeartDown(View view) {
+    public void onHeartDown() {
         heart_rate -= plus;
         tvHeartrate.setText("Heart rate : " + heart_rate);
     }
 
-    public void onTurnNone(View view) {
+    public void onTurnNone() {
         turn_signal = VehicleDataContainer.TurnSignal.Invalid;
         tvTurnsignal.setText("Turn signal : None");
     }
 
-    public void onTurnLeft(View view) {
+    public void onTurnLeft() {
         turn_signal = VehicleDataContainer.TurnSignal.Left;
         tvTurnsignal.setText("Turn signal : Left");
     }
 
-    public void onTurnRight(View view) {
+    public void onTurnRight() {
         turn_signal = VehicleDataContainer.TurnSignal.Right;
         tvTurnsignal.setText("Turn signal : Right");
     }
 
-    public void onTurnBoth(View view) {
+    public void onTurnBoth() {
         turn_signal = VehicleDataContainer.TurnSignal.Both;
         tvTurnsignal.setText("Turn signal : Both");
     }
 
-    public void onDsmDisable(View view) {
+    public void onDsmDisable() {
         driverstatus = DriverDataContainer.DSM_DISABLE;
         tvDriverStatus.setText("Clear");
     }
 
-    public void onDsmEyeF(View view) {
+    public void onDsmEyeF() {
         driverstatus = DriverDataContainer.DSM_KEEP_EYES_FORWARD;
         tvDriverStatus.setText("Keep Eyes Forward");
     }
 
-    public void onDsmFace(View view) {
+    public void onDsmFace() {
         driverstatus = DriverDataContainer.DSM_CANNOT_RECOGNIZE_FACE;
         tvDriverStatus.setText("Can't Recognize Face");
     }
 
-    public void onDsm1stSleep(View view) {
+    public void onDsm1stSleep() {
         driverstatus = DriverDataContainer.DSM_1ST_DROWSINESS;
         tvDriverStatus.setText("1ST_DROWSINESS");
     }
 
-    public void onDsm2ndSleep(View view) {
+    public void onDsm2ndSleep() {
         driverstatus = DriverDataContainer.DSM_2ND_DROWSINESS;
         tvDriverStatus.setText("2ND_DROWSINESS");
     }
@@ -817,4 +891,260 @@ public class MainActivity extends AppCompatActivity {
             plus = 1;
         }
     }
+
+    public void onModelNormal() {
+        modelnum = 1;
+    }
+
+    public void onModelAbnormal() {
+        modelnum = 2;
+
+    }
+
+    private Runnable run = new Runnable() {
+        @Override
+        public void run() {
+            Log.d("khlee", "thread start");
+            String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/sc.conf";
+            ScheduleAgent agent = new ScheduleAgent(path);
+            agent.insertJob("Speedup", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Speedup");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Speeddown", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Speeddown");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Rpmup", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Rpmup");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Rpmdown", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Rpmdown");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Heartup", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Heartup");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Heartdown", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Heartdown");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Turnnone", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Turnnone");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Turnleft", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Turnleft");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Turnright", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Turnright");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Turnboth", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Turnboth");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Break", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Break");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Dsmdisable", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Dsmdisable");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Dsmeye", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Dsmeye");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Dsmface", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Dsmface");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Dsm1stsleep", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Dsm1stsleep");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+            agent.insertJob("Dsm2ndsleep", new ConfigTask() {
+                @Override
+                public void run() {
+                    Bundle bnd = new Bundle();
+                    bnd.putString("task", "Dsm2ndsleep");
+                    Message msg = new Message();
+                    msg.setData(bnd);
+                    uiUpdate.sendMessage(msg);
+                }
+            });
+
+
+            try {
+                agent.loadConfigFile();
+                Thread.sleep(10000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
+    private Thread th_simul = new Thread(run);
+
+    public void onSimul(View view) {
+        th_simul.start();
+    }
+
+    final Handler uiUpdate = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            Bundle bnd = new Bundle();
+            bnd = msg.getData();
+            if(bnd.getString("task") == "Speedup"){
+                onSpeedUp();
+            }
+            if(bnd.getString("task") == "Speeddown"){
+                onSpeedDown();
+            }
+            if(bnd.getString("task") == "Rpmup"){
+                onRpmUp();
+            }
+            if(bnd.getString("task") == "Rpmdown"){
+                onRpmDown();
+            }
+            if(bnd.getString("task") == "Heartup"){
+                onHeartUp();
+            }
+            if(bnd.getString("task") == "Heartdown"){
+                onHeartDown();
+            }
+            if(bnd.getString("task") == "Turnnone"){
+                onTurnNone();
+            }
+            if(bnd.getString("task") == "Turnleft"){
+                onTurnLeft();
+            }
+            if(bnd.getString("task") == "Turnright"){
+                onTurnRight();
+            }
+            if(bnd.getString("task") == "Turnboth"){
+                onTurnBoth();
+            }
+            if(bnd.getString("task") == "Breakdown"){
+                //onBreak();
+                car_break = true;
+            }
+            if(bnd.getString("task") == "Breakup"){
+                //onBreak();
+                car_break = false;
+            }
+            if(bnd.getString("task") == "Dsmdisable"){
+                onDsmDisable();
+            }
+            if(bnd.getString("task") == "Dsmeye"){
+                onDsmEyeF();
+            }
+            if(bnd.getString("task") == "Dsmface"){
+                onDsmFace();
+            }
+            if(bnd.getString("task") == "Dsm1stsleep"){
+                onDsm1stSleep();
+            }
+            if(bnd.getString("task") == "Dsm2ndsleep"){
+                onDsm2ndSleep();
+            }
+
+        }
+    };
 }

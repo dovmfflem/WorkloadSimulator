@@ -23,8 +23,8 @@ import libsvm.svm_node;
 
 public class WorkloadManager {
 
-	private boolean is_debug = false;
-
+	private boolean is_debug = true;
+    private boolean is_tablet = true;
 	private double Workload;
 	
 	private double speed_weight;
@@ -76,10 +76,10 @@ public class WorkloadManager {
 	int heartFlag;
 	byte heart_data[];
 	int heart_cnt;
-	final int NumberOfHeartData = 250;
+	final int NumberOfHeartData = 10;
 	private boolean heartcheck;
 	double heart_avg;
-	private int heartrate_check_time = 1000;
+	private int heartrate_check_time = 3000;
 
 	private Context mContext;
 	///added for svm
@@ -92,10 +92,10 @@ public class WorkloadManager {
 	private Thread th_trainData;
 
 	private int cnt_cl1, cnt_cl2, cnt_cl3;
-	private int cnt_limit = 0;
+	private int cnt_limit = 1;
 	public boolean trainning_flag = true;
 	private boolean predict_flag = true;
-	public int num_train_dim = 50;
+	public int num_train_dim = 100;
 	private int num_stored_data = 500;
 	public int data_counter = 0;
 
@@ -214,8 +214,9 @@ public class WorkloadManager {
 		Thrd_acceleration.start();
 		Thrd_dsm.start();
 		Thrd_rapid_steering.start();
-        //Driver_Heart_checker.start();
+        Driver_Heart_checker.start();
 		check_train_result();
+		check_traindata_size();
 		if(is_trained_result){
 			init_svm_predict();
 			//predict_data.start();
@@ -231,6 +232,23 @@ public class WorkloadManager {
 		}
 	}
 
+	private int limite_file_size = 100000;  //100KB
+	public void check_traindata_size(){
+		File datafile = new File(fWorkloadData.toString() + filename);
+		if(datafile.exists()){
+			long file_size = datafile.length();
+			if(is_debug) Log.d("khlee","datafile size : " + file_size);
+			if(file_size >= limite_file_size){
+				if(datafile.delete()){
+					if(is_debug) Log.d("khlee","datafile deleted");
+				}else{
+					if(is_debug) Log.d("khlee","datafile continue");
+				}
+
+			}
+		}
+	}
+
 	public void stop(){
 		gstart = false;
 	}
@@ -238,25 +256,8 @@ public class WorkloadManager {
 	public byte getWorkload(){
 
 		byte byte_workload = 0;
-		if(is_debug){
-			byte_workload = (byte)((Math.round(Workload)));
-		}else{
-			byte_workload = (byte)((Math.round(Workload*0.1)) * 10);
-		}
-
-
-		if(!heartcheck){
-			return byte_workload;
-		}else {
-			if(heartFlag == STATE_HEART_NORMAL){
-				return byte_workload;
-			}else if(heartFlag == STATE_HEART_HIGH){
-				if(is_debug) Log.d("VehicleDataManager", "State_Heart_High Return " + Workload);
-				return (byte)(byte_workload +10);
-			}else{
-				return byte_workload;
-			}
-		}
+		byte_workload = (byte)((Math.round(Workload)));
+		return byte_workload;
 	}
 
 	public byte getDsm(){
@@ -273,36 +274,41 @@ public class WorkloadManager {
 		return spst;
 	}
 
+    public byte getHeart(){
+        byte heart_data;
+        heart_data = (byte)DriverHeart;
+        return heart_data;
+    }
 
 	public void setqueue(){
 		data_counter++;
-		//1그대로
 
-
-		//2변화량
-
-		ll.add(speed / 25.0);
-		//ll.add((double)speed);
-		ll.add(steering / 450.0);
-		ll.add(rpm / 800.0);
-		if(d_break){
-			ll.add(0.9);
-		}else{
-			ll.add(0.1);
-		}
-
-
-//		ll.addLast((double)steering);
-		ll.addLast((double)DriverStatus);
-
-		if(ll.size() > num_train_dim){
+		if(ll.size() < num_train_dim){
+			ll.add(speed / 25.0);
+			ll.add(steering / 450.0);
+			ll.add(rpm / 800.0);
+			if(d_break){
+				ll.add(0.9);
+			}else{
+				ll.add(0.1);
+			}
+			ll.addLast((double)DriverStatus);
+		}else if(ll.size() >= num_train_dim){
+			ll.add(speed / 25.0);
 			ll.removeFirst();
+			ll.add(steering / 450.0);
 			ll.removeFirst();
+			ll.add(rpm / 800.0);
 			ll.removeFirst();
+			if(d_break){
+				ll.add(0.9);
+				ll.removeFirst();
+			}else{
+				ll.add(0.1);
+				ll.removeFirst();
+			}
+			ll.addLast((double)DriverStatus);
 			ll.removeFirst();
-			ll.removeFirst();
-
-
 		}
 	}
 
@@ -377,19 +383,23 @@ public class WorkloadManager {
 			int before_cnt = 0;
 			while(gstart){
 				if(heartcheck){
-					if(heart_avg / NumberOfHeartData >= 83){
-						heartFlag = STATE_HEART_HIGH;
-						if(is_debug) Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_HIGH" );
-					}else if(heart_avg / NumberOfHeartData <= 50){
-						heartFlag = STATE_HEART_LOW;
-						//Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_LOW");
+					if(heart_avg / NumberOfHeartData >= 100){
+						heartFlag = STATE_HEART_HIGH;	//10점
+                        addWorkload(VALUE_WORKLOAD_HEART_HIGH, "VALUE_WORKLOAD_HEART_HIGH");
+                        if(is_debug) Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_HIGH" );
+					}else if(heart_avg / NumberOfHeartData <= 100 && heart_avg / NumberOfHeartData < 80){
+						heartFlag = STATE_HEART_LITTLE_HIGH;	//5점
+                        addWorkload(VALUE_WORKLOAD_HEART_LITTLE_HIGH, "VALUE_WORKLOAD_HEART_LITTLE_HIGH");
+                        if(is_debug) Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_LITTLE_HIGH");
+					}else if(heart_avg / NumberOfHeartData < 65){
+						//Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_NORMAL");
 					}else{
 						heartFlag = STATE_HEART_NORMAL;
-						//Log.d("VehicleDataManager", "Heartrate : " + heart_avg / NumberOfHeartData + " Heart state : STATE_HEART_NORMAL");
 					}
 				}
 				try {
 					Thread.sleep(heartrate_check_time);
+					if(is_debug) Log.d("khlee", "heartrate_check_time");
 					if(before_cnt == heart_cnt){
 						heartcheck = false;
 					}
@@ -648,6 +658,7 @@ public class WorkloadManager {
 			is_trained_result = true;
 			svm_train t = new svm_train();
 			String[] argv = {"-b","1", fWorkloadData.toString() + "/" + filename, fWorkloadData.toString() + model_filename};
+			if(is_debug) Log.d("khlee", "SVM Training argv : " + argv[0] + " " + argv[1] + " " + argv[2] + " " + argv[3]);
 			try {
 				t.run(argv);
 				if(is_debug) Log.d("khlee", "SVM Trainning finish");
@@ -655,7 +666,6 @@ public class WorkloadManager {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
 		}
 	});
 
@@ -720,20 +730,20 @@ public class WorkloadManager {
 //			if(is_debug) Log.d("khlee", "predict result" + svm_result);
 		}
 
-
-		if(!heartcheck){
-            if(Workload + work >= 100) {
-                Workload = 100;
-            }else{
-				Workload +=work;
-			}
-		}else{
-            if(Workload + work >= 90) {
-                Workload = 90;
-            }else{
-				Workload += (work*0.9);
-			}
-		}
+//heart 알고리즘 변경으로 인한 삭제
+//		if(!heartcheck){
+//            if(Workload + work >= 100) {
+//                Workload = 100;
+//            }else{
+//				Workload +=work;
+//			}
+//		}else{
+//            if(Workload + work >= 90) {
+//                Workload = 90;
+//            }else{
+//				Workload += (work*0.9);
+//			}
+//		}
 
 		if(unstable_flag){
 			if(Workload + (work*0.5) >= 100){
@@ -742,7 +752,13 @@ public class WorkloadManager {
 				Workload += (work*0.2);
 				if(is_debug) Log.d("khlee","unstable up");
 			}
-		}
+		}else{
+            if(Workload + work >= 100) {
+                Workload = 100;
+            }else{
+				Workload +=work;
+			}
+        }
 
 		down_cnt = 5;
 		down_value = (int)(Workload / 5);
@@ -764,10 +780,14 @@ public class WorkloadManager {
 	private static final int VALUE_WORKLOAD_NONFRONTEYE = 20;
 	private static final int VALUE_WORKLOAD_ACCEL = 10;
 	private static final int VALUE_WORKLOAD_DECEL = 10;
+    private static final int VALUE_WORKLOAD_HEART_LITTLE_HIGH = 5;
+    private static final int VALUE_WORKLOAD_HEART_HIGH = 10;
 
 	private static final int STATE_HEART_NORMAL = 0;
 	private static final int STATE_HEART_HIGH = 1;
-	private static final int STATE_HEART_LOW = 2;
+	private static final int STATE_HEART_LITTLE_HIGH = 2;
+	private static final int STATE_HEART_LOW = 3;
+
 }
 
 class rtrainData implements Runnable{

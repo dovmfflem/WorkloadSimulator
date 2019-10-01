@@ -182,7 +182,7 @@ public class VehicleManager {
         workload_packet[3] = workload;
         workload_packet[1] = wm.getDsm();
         workload_packet[0] = wm.getSpSt();
-        workload_packet[2] = 0;
+        workload_packet[2] = wm.getHeart();
 
         ret_packet = makeint(workload_packet);
         return ret_packet;
@@ -195,9 +195,9 @@ public class VehicleManager {
 
 
         alertness_packet[3] = alertness;
-        alertness_packet[1] = wm.getDsm();
-        alertness_packet[0] = wm.getSpSt();
-        alertness_packet[2] = 0;
+        alertness_packet[1] = am.getDsm();
+        alertness_packet[0] = am.getSpSt();
+        alertness_packet[2] = am.getHeart();
 
         ret_packet = makeint(alertness_packet);
         return ret_packet;

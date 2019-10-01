@@ -157,6 +157,12 @@ public class AlertnessManager {
 		return spst;
 	}
 
+	public byte getHeart(){
+		byte heart_data;
+		heart_data = (byte)DriverHeart;
+		return heart_data;
+	}
+
 	
 	public void start(){
 		gstart = true;
